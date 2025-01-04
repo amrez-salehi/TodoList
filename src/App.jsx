@@ -3,7 +3,13 @@ import { FaPlus, FaSearch, FaEdit, FaCheck, FaTrash, FaSort } from "react-icons/
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
-const priorityColors = ["#ff0000", "#00ff00", "#0000ff", "#ffff00", "#ffffff"];
+const priorityColors = [
+  { name: "Red", color: "#ff0000" },
+  { name: "Green", color: "#00ff00" },
+  { name: "Blue", color: "#0000ff" },
+  { name: "Yellow", color: "#ffff00" },
+  { name: "White", color: "#ffffff" },
+];
 
 const App = () => {
   const [tasks, setTasks] = useState([]);
@@ -103,7 +109,10 @@ const App = () => {
       if (sortOption === "date") {
         return new Date(a.date) - new Date(b.date);
       } else if (sortOption === "priority") {
-        return priorityColors.indexOf(a.color) - priorityColors.indexOf(b.color);
+        return (
+          priorityColors.findIndex((c) => c.color === a.color) -
+          priorityColors.findIndex((c) => c.color === b.color)
+        );
       }
       return 0;
     });
@@ -175,9 +184,9 @@ const App = () => {
             onChange={(e) => setFilterColor(e.target.value)}
           >
             <option value="">All Colors</option>
-            {priorityColors.map((color) => (
-              <option key={color} value={color} style={{ backgroundColor: color }}>
-                {" "}
+            {priorityColors.map(({ name, color }) => (
+              <option key={color} value={color}>
+                {name}
               </option>
             ))}
           </select>
@@ -203,7 +212,7 @@ const App = () => {
             className="bg-gray-700 text-white p-3 rounded-lg"
           />
           <div className="flex space-x-2">
-            {priorityColors.map((color) => (
+            {priorityColors.map(({ color }) => (
               <div
                 key={color}
                 onClick={() => setNewTaskColor(color)}
@@ -229,13 +238,16 @@ const App = () => {
           {filteredTasks.map((task) => (
             <li
               key={task.id}
-              className={`flex items-center justify-between bg-gray-700 p-4 rounded-lg ${
+              className={flex items-center justify-between bg-gray-700 p-4 rounded-lg ${
                 task.completed ? "opacity-50 line-through" : ""
-              }`}
+              }}
             >
               <div className="flex-grow">
                 <span style={{ color: task.color }}>{task.text}</span>
-                <div className="text-sm text-gray-400">{task.date}</div>
+                <div className="text-sm text-gray-400">
+                  {task.date} -{" "}
+                  {priorityColors.find(({ color }) => color === task.color)?.name || ""}
+                </div>
               </div>
               <div className="flex items-center space-x-2">
                 <input
