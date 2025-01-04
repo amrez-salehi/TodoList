@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { FaPlus, FaSearch, FaEdit, FaCheck, FaTrash } from "react-icons/fa";
+import React, { useState, useEffect } from "react";
+import { FaPlus, FaSearch, FaEdit, FaCheck, FaTrash, FaSort } from "react-icons/fa";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
@@ -18,6 +18,18 @@ const App = () => {
   const [searchText, setSearchText] = useState("");
   const [filterColor, setFilterColor] = useState("");
   const [filterDate, setFilterDate] = useState(null);
+  const [sortOption, setSortOption] = useState("date");
+
+  // Load tasks from LocalStorage on mount
+  useEffect(() => {
+    const savedTasks = JSON.parse(localStorage.getItem("tasks")) || [];
+    setTasks(savedTasks);
+  }, []);
+
+  // Save tasks to LocalStorage whenever tasks change
+  useEffect(() => {
+    localStorage.setItem("tasks", JSON.stringify(tasks));
+  }, [tasks]);
 
   // Add Task
   const addTask = () => {
@@ -27,6 +39,7 @@ const App = () => {
       text: newTask,
       date: newTaskDate.toISOString().split("T")[0],
       color: newTaskColor,
+      completed: false,
     };
     setTasks([...tasks, task]);
     setNewTask("");
@@ -34,9 +47,23 @@ const App = () => {
     setNewTaskColor("#ffffff");
   };
 
+  // Toggle Task Completion
+  const toggleCompletion = (id) => {
+    setTasks(
+      tasks.map((task) =>
+        task.id === id ? { ...task, completed: !task.completed } : task
+      )
+    );
+  };
+
   // Delete Task
   const deleteTask = (id) => {
     setTasks(tasks.filter((task) => task.id !== id));
+  };
+
+  // Delete All Tasks
+  const deleteAllTasks = () => {
+    setTasks([]);
   };
 
   // Save Edited Task
@@ -48,7 +75,9 @@ const App = () => {
               ...task,
               text: editingTaskText,
               color: editingTaskColor || task.color,
-              date: editingTaskDate ? editingTaskDate.toISOString().split("T")[0] : task.date,
+              date: editingTaskDate
+                ? editingTaskDate.toISOString().split("T")[0]
+                : task.date,
             }
           : task
       )
@@ -59,15 +88,25 @@ const App = () => {
     setEditingTaskDate(new Date());
   };
 
-  // Filter Tasks
-  const filteredTasks = tasks.filter((task) => {
-    const matchesSearch = task.text
-      .toLowerCase()
-      .includes(searchText.toLowerCase());
-    const matchesColor = !filterColor || task.color === filterColor;
-    const matchesDate = !filterDate || task.date === filterDate.toISOString().split("T")[0];
-    return matchesSearch && matchesColor && matchesDate;
-  });
+  // Filter and Sort Tasks
+  const filteredTasks = tasks
+    .filter((task) => {
+      const matchesSearch = task.text
+        .toLowerCase()
+        .includes(searchText.toLowerCase());
+      const matchesColor = !filterColor || task.color === filterColor;
+      const matchesDate =
+        !filterDate || task.date === filterDate.toISOString().split("T")[0];
+      return matchesSearch && matchesColor && matchesDate;
+    })
+    .sort((a, b) => {
+      if (sortOption === "date") {
+        return new Date(a.date) - new Date(b.date);
+      } else if (sortOption === "priority") {
+        return priorityColors.indexOf(a.color) - priorityColors.indexOf(b.color);
+      }
+      return 0;
+    });
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6 flex">
@@ -93,6 +132,37 @@ const App = () => {
           </div>
         </div>
 
+        {/* Sort Options */}
+        <div>
+          <label htmlFor="sort" className="block text-sm mb-2 text-gray-400">
+            Sort Tasks
+          </label>
+          <select
+            id="sort"
+            className="w-full bg-gray-700 p-2 rounded-lg text-white outline-none"
+            value={sortOption}
+            onChange={(e) => setSortOption(e.target.value)}
+          >
+            <option value="date">By Date</option>
+            <option value="priority">By Priority</option>
+          </select>
+        </div>
+
+        {/* Filter by Date */}
+        <div>
+          <label htmlFor="date" className="block text-sm mb-2 text-gray-400">
+            Filter by Date
+          </label>
+          <DatePicker
+            id="date"
+            selected={filterDate}
+            onChange={(date) => setFilterDate(date)}
+            dateFormat="yyyy/MM/dd"
+            className="w-full bg-gray-700 p-2 rounded-lg text-white outline-none"
+            placeholderText="Select a date"
+          />
+        </div>
+
         {/* Filter by Color */}
         <div>
           <label htmlFor="color" className="block text-sm mb-2 text-gray-400">
@@ -111,21 +181,6 @@ const App = () => {
               </option>
             ))}
           </select>
-        </div>
-
-        {/* Filter by Date */}
-        <div>
-          <label htmlFor="date" className="block text-sm mb-2 text-gray-400">
-            Filter by Date
-          </label>
-          <DatePicker
-            id="date"
-            selected={filterDate}
-            onChange={(date) => setFilterDate(date)}
-            dateFormat="yyyy/MM/dd"
-            className="w-full bg-gray-700 p-2 rounded-lg text-white outline-none"
-            placeholderText="Select a date"
-          />
         </div>
       </aside>
 
@@ -174,69 +229,55 @@ const App = () => {
           {filteredTasks.map((task) => (
             <li
               key={task.id}
-              className="flex items-center justify-between bg-gray-700 p-4 rounded-lg"
+              className={`flex items-center justify-between bg-gray-700 p-4 rounded-lg ${
+                task.completed ? "opacity-50 line-through" : ""
+              }`}
             >
-              {editingTaskId === task.id ? (
-                <>
-                  <input
-                    className="flex-grow bg-gray-600 p-2 rounded-lg text-white outline-none"
-                    value={editingTaskText}
-                    onChange={(e) => setEditingTaskText(e.target.value)}
-                  />
-                  <div className="flex space-x-2">
-                    {priorityColors.map((color) => (
-                      <div
-                        key={color}
-                        onClick={() => setEditingTaskColor(color)}
-                        className="w-8 h-8 rounded-full"
-                        style={{
-                          backgroundColor: color,
-                          cursor: "pointer",
-                          border: editingTaskColor === color ? "2px solid #000" : "none",
-                        }}
-                      />
-                    ))}
-                  </div>
-                  <DatePicker
-                    selected={editingTaskDate}
-                    onChange={(date) => setEditingTaskDate(date)}
-                    dateFormat="yyyy/MM/dd"
-                    className="bg-gray-700 text-white p-3 rounded-lg"
-                  />
-                  <button
-                    onClick={() => saveTask(task.id)}
-                    className="text-green-500 hover:text-green-600 text-sm p-1 rounded-lg"
-                  >
-                    <FaCheck />
-                  </button>
-                </>
-              ) : (
-                <>
-                  <span className="flex-grow" style={{ color: task.color }}>
-                    {task.text}
-                  </span>
-                  <button
-                    onClick={() => {
-                      setEditingTaskId(task.id);
-                      setEditingTaskText(task.text);
-                      setEditingTaskColor(task.color);
-                      setEditingTaskDate(new Date(task.date));
-                    }}
-                    className="text-blue-500 hover:text-blue-600"
-                  >
-                    <FaEdit />
-                  </button>
-                  <button
-                    onClick={() => deleteTask(task.id)}
-                    className="text-red-500 hover:text-red-600"
-                  >
-                    <FaTrash />
-                  </button>
-                </>
-              )}
+              <div className="flex-grow">
+                <span style={{ color: task.color }}>{task.text}</span>
+                <div className="text-sm text-gray-400">{task.date}</div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={task.completed}
+                  onChange={() => toggleCompletion(task.id)}
+                  className="mr-2"
+                />
+                <button
+                  onClick={() => {
+                    setEditingTaskId(task.id);
+                    setEditingTaskText(task.text);
+                    setEditingTaskColor(task.color);
+                    setEditingTaskDate(new Date(task.date));
+                  }}
+                  className="text-blue-500 hover:text-blue-600"
+                >
+                  <FaEdit />
+                </button>
+                <button
+                  onClick={() => deleteTask(task.id)}
+                  className="text-red-500 hover:text-red-600"
+                >
+                  <FaTrash />
+                </button>
+              </div>
             </li>
           ))}
         </ul>
+
+        {/* Task Summary */}
+        <div className="mt-6 flex justify-between items-center">
+          <span>
+            {tasks.filter((task) => !task.completed).length} tasks remaining
+          </span>
+          <button
+            onClick={deleteAllTasks}
+            className="bg-red-500 hover:bg-red-600 p-3 rounded-lg"
+          >
+            Clear All
+          </button>
+        </div>
       </main>
     </div>
   );
