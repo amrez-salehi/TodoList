@@ -1,0 +1,28 @@
+.react-datepicker {
+    background-color: #2d3748; /* رنگ پس‌زمینه مطابق با رنگ تم */
+    border: none;
+    border-radius: 0.5rem;
+    color: #fff;
+  }
+
+  .react-datepicker__header {
+    background-color: #4a5568; /* رنگ هدر مطابق با تم */
+    border-bottom: none;
+  }
+
+  .react-datepicker__day,
+  .react-datepicker__day-name,
+  .react-datepicker__current-month {
+    color: #fff;
+  }
+
+  .react-datepicker__day--selected {
+    background-color: #3182ce; /* رنگ انتخاب */
+    color: #fff;
+    border-radius: 0.25rem;
+  }
+
+  .react-datepicker__day--keyboard-selected {
+    background-color: #3182ce;
+    color: #fff;
+  }
